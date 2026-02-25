@@ -10,7 +10,7 @@ import 'tables.dart';
 part 'database.g.dart';
 
 @lazySingleton
-@DriftDatabase(tables: [Roles])
+@DriftDatabase(tables: [Roles, Usuarios])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
