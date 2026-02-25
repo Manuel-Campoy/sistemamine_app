@@ -16,6 +16,7 @@ import '../../features/auth/data/repositories/auth_repository_impl.dart'
     as _i153;
 import '../../features/auth/domain/repositories/i_auth_repository.dart'
     as _i589;
+import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
 import '../database/database.dart' as _i660;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -28,6 +29,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i660.AppDatabase>(() => _i660.AppDatabase());
     gh.lazySingleton<_i589.IAuthRepository>(
       () => _i153.AuthRepositoryImpl(gh<_i660.AppDatabase>()),
+    );
+    gh.factory<_i797.AuthBloc>(
+      () => _i797.AuthBloc(gh<_i589.IAuthRepository>()),
     );
     return this;
   }
