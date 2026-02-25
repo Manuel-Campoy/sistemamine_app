@@ -1,5 +1,3 @@
-// lib/features/auth/presentation/bloc/auth_bloc.dart
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
@@ -7,7 +5,7 @@ import '../../domain/repositories/i_auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
-@injectable // ¡Le decimos a GetIt que prepare este BLoC!
+@injectable // GetIt prepara este BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final IAuthRepository _authRepository;
 
@@ -40,7 +38,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final exito = await _authRepository.login(event.nombreUsuario, event.contrasena);
       
       if (exito) {
-        emit(AuthAuthenticated()); // ¡Navega al menú principal!
+        emit(AuthAuthenticated()); // Navega al menú principal
       } else {
         emit(const AuthError('Usuario o contraseña incorrectos')); // Muestra error
       }
