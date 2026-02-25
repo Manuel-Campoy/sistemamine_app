@@ -12,6 +12,10 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
+import '../../features/auth/data/repositories/auth_repository_impl.dart'
+    as _i153;
+import '../../features/auth/domain/repositories/i_auth_repository.dart'
+    as _i589;
 import '../database/database.dart' as _i660;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -22,6 +26,9 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     gh.lazySingleton<_i660.AppDatabase>(() => _i660.AppDatabase());
+    gh.lazySingleton<_i589.IAuthRepository>(
+      () => _i153.AuthRepositoryImpl(gh<_i660.AppDatabase>()),
+    );
     return this;
   }
 }
