@@ -5,6 +5,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/custom_text_field.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,10 +41,10 @@ class _LoginPageState extends State<LoginPage> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          // TODO: Navegar a la pantalla principal (Dashboard)
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Bienvenido al Sistema Minero!'), backgroundColor: AppColors.successGreen),
           );
+          context.go('/dashboard');
         }
       },
       builder: (context, state) {
