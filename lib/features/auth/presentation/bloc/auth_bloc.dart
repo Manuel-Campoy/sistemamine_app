@@ -16,6 +16,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<RecoverPasswordRequested>(_onRecoverPasswordRequested);
+    on<VerifyRecoveryCodeRequested>(_onVerifyRecoveryCodeRequested);
+    on<ResetPasswordRequested>(_onResetPasswordRequested);
   }
 
   Future<void> _onCheckAuthStatus(CheckAuthStatus event, Emitter<AuthState> emit) async {
@@ -51,5 +54,47 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     await _authRepository.logout();
     emit(AuthInitial()); // Lo regresa a la pantalla de Login
+  }
+
+  Future<void> _onRecoverPasswordRequested(RecoverPasswordRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    try {
+      final exito = await _authRepository.solicitarCodigoRecuperacion(event.email);
+      if (exito) {
+        emit(AuthRecoveryCodeSent(event.email));
+      } else {
+        emit(const AuthError('No se encontró una cuenta con este correo'));
+      }
+    } catch (e) {
+      emit(const AuthError('Error al conectar con el servidor'));
+    }
+  }
+
+  Future<void> _onVerifyRecoveryCodeRequested(VerifyRecoveryCodeRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    try {
+      final exito = await _authRepository.verificarCodigo(event.email, event.code);
+      if (exito) {
+        emit(AuthRecoveryCodeVerified(event.email));
+      } else {
+        emit(const AuthError('El código de verificación es incorrecto'));
+      }
+    } catch (e) {
+      emit(const AuthError('Error al verificar el código'));
+    }
+  }
+
+  Future<void> _onResetPasswordRequested(ResetPasswordRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    try {
+      final exito = await _authRepository.cambiarContrasena(event.email, event.newPassword);
+      if (exito) {
+        emit(AuthRecoverySuccess());
+      } else {
+        emit(const AuthError('No se pudo actualizar la contraseña'));
+      }
+    } catch (e) {
+      emit(const AuthError('Error de sistema'));
+    }
   }
 }

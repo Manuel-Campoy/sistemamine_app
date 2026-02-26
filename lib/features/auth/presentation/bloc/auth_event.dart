@@ -23,3 +23,26 @@ class LoginRequested extends AuthEvent {
 
 // 3. Cuando el usuario presiona "Cerrar Sesión" en el menú
 class LogoutRequested extends AuthEvent {}
+
+class RecoverPasswordRequested extends AuthEvent {
+  final String email;
+  const RecoverPasswordRequested(this.email);
+  @override
+  List<Object> get props => [email];
+}
+
+class VerifyRecoveryCodeRequested extends AuthEvent {
+  final String email;
+  final String code;
+  const VerifyRecoveryCodeRequested(this.email, this.code);
+  @override
+  List<Object> get props => [email, code];
+}
+
+class ResetPasswordRequested extends AuthEvent {
+  final String email;
+  final String newPassword;
+  const ResetPasswordRequested(this.email, this.newPassword);
+  @override
+  List<Object> get props => [email, newPassword];
+}
