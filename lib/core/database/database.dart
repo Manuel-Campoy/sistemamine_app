@@ -10,12 +10,18 @@ import 'tables.dart';
 part 'database.g.dart';
 
 @lazySingleton
-@DriftDatabase(tables: [Roles, Usuarios])
+@DriftDatabase(tables: [
+  Roles,
+  Usuarios,
+  EstatusProspecciones,
+  ProspeccionLotes,
+  LoteCoordenadas,
+  ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 }
 
 LazyDatabase _openConnection() {

@@ -35,7 +35,6 @@ class AuthRepositoryImpl implements IAuthRepository {
       
       return true; // Login exitoso
     } catch (e) {
-      print('Error en login: $e');
       return false; // Falló el login
     }
   }
