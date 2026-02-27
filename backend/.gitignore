@@ -1,0 +1,29 @@
+# Dependencias 
+node_modules/
+
+# Variables de entorno 
+.env
+.env.test
+.env.production
+
+# Logs de errores de NPM
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Carpetas de testing y cobertura
+coverage/
+
+# Archivos temporales de editores de código
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
