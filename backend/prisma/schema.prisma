@@ -1,14 +1,445 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlserver"
+}
+
+model AuditoriaBitacora {
+  IdAuditoria        String    @id(map: "PK__Auditori__7FD13FA0D476EFFA") @default(dbgenerated("newid()"), map: "DF__Auditoria__IdAud__13F1F5EB") @db.UniqueIdentifier
+  IdUsuario          String    @db.UniqueIdentifier
+  Accion             String    @db.NVarChar(50)
+  EntidadAfectada    String    @db.NVarChar(100)
+  IdRegistroAfectado String    @db.UniqueIdentifier
+  ValoresAntes       String?   @db.NVarChar(Max)
+  ValoresDespues     String?   @db.NVarChar(Max)
+  FechaHora          DateTime? @default(now(), map: "DF__Auditoria__Fecha__14E61A24") @db.DateTime
+  Usuario            Usuario   @relation(fields: [IdUsuario], references: [IdUsuario], onUpdate: NoAction, map: "FK_Auditoria_Usuario")
+}
+
+model ControlCierre {
+  IdCierre            String          @id(map: "PK__ControlC__7BB331EF1BA4CF74") @default(dbgenerated("newid()"), map: "DF__ControlCi__IdCie__00DF2177") @db.UniqueIdentifier
+  IdLote              String          @db.UniqueIdentifier
+  IdUsuarioCierre     String          @db.UniqueIdentifier
+  TipoCierre          String          @db.NVarChar(50)
+  FechaOperativa      DateTime        @db.Date
+  Turno               String?         @db.NVarChar(50)
+  ObservacionesCierre String?         @db.NVarChar(Max)
+  FechaRealizacion    DateTime?       @default(now(), map: "DF__ControlCi__Fecha__01D345B0") @db.DateTime
+  ProspeccionLote     ProspeccionLote @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_ControlCierre_Lote")
+  Usuario             Usuario         @relation(fields: [IdUsuarioCierre], references: [IdUsuario], onUpdate: NoAction, map: "FK_ControlCierre_Usuario")
+}
+
+model EstatusProspeccion {
+  IdEstatusProspeccion   String                   @id(map: "PK__EstatusP__8D76261592E5CF0B") @default(dbgenerated("newid()"), map: "DF__EstatusPr__IdEst__07C12930") @db.UniqueIdentifier
+  Descripcion            String                   @unique(map: "UQ__EstatusP__92C53B6CFCEC42A3") @db.NVarChar(100)
+  Activo                 Boolean?                 @default(true, map: "DF__EstatusPr__Activ__08B54D69")
+  FechaCreacion          DateTime?                @default(now(), map: "DF__EstatusPr__Fecha__09A971A2") @db.DateTime
+  FechaActualizacion     DateTime?                @default(now(), map: "DF__EstatusPr__Fecha__0A9D95DB") @db.DateTime
+  ProspeccionLote        ProspeccionLote[]
+  ProspeccionSeguimiento ProspeccionSeguimiento[]
+}
+
+model LoteCoordenada {
+  IdCoordenada    String          @id(map: "PK__LoteCoor__6A279A164EC56F1B") @default(dbgenerated("newid()"), map: "DF__LoteCoord__IdCoo__1F98B2C1") @db.UniqueIdentifier
+  IdLote          String          @db.UniqueIdentifier
+  Latitud         Decimal         @db.Decimal(10, 8)
+  Longitud        Decimal         @db.Decimal(11, 8)
+  Altitud         Decimal?        @db.Decimal(10, 2)
+  PrecisionGPS    Decimal?        @db.Decimal(10, 2)
+  OrdenSecuencia  Int
+  Activo          Boolean?        @default(true, map: "DF__LoteCoord__Activ__208CD6FA")
+  FechaCaptura    DateTime?       @default(now(), map: "DF__LoteCoord__Fecha__2180FB33") @db.DateTime
+  ProspeccionLote ProspeccionLote @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Coordenada_Lote")
+}
+
+model LoteEvidencia {
+  IdEvidencia     String          @id(map: "PK__LoteEvid__C602EF7E19E5E17F") @default(dbgenerated("newid()"), map: "DF__LoteEvide__IdEvi__25518C17") @db.UniqueIdentifier
+  IdLote          String          @db.UniqueIdentifier
+  TipoEvidencia   String          @db.NVarChar(20)
+  UrlArchivo      String          @db.NVarChar(500)
+  Descripcion     String?         @db.NVarChar(255)
+  Activo          Boolean?        @default(true, map: "DF__LoteEvide__Activ__2645B050")
+  FechaCaptura    DateTime?       @default(now(), map: "DF__LoteEvide__Fecha__2739D489") @db.DateTime
+  ProspeccionLote ProspeccionLote @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Evidencia_Lote")
+}
+
+model Mina {
+  IdMina               String                    @id(map: "PK__Mina__48765A56EF81DEB0") @default(dbgenerated("newid()"), map: "DF__Mina__IdMina__6C190EBB") @db.UniqueIdentifier
+  ClaveMinera          String                    @unique(map: "UQ_Mina_Clave") @db.NVarChar(50)
+  NombreEmpresa        String                    @unique(map: "UQ_Mina_Nombre") @db.NVarChar(150)
+  AliasMina            String                    @unique(map: "UQ_Mina_Alias") @db.NVarChar(100)
+  TipoMina             String                    @db.NVarChar(50)
+  MetodoExtraccion     String                    @db.NVarChar(100)
+  MineralesPrincipales String?                   @db.NVarChar(100)
+  EstatusOperacion     String                    @db.NVarChar(50)
+  DireccionMina        String?                   @db.NVarChar(255)
+  PoligonoUbicacion    Unsupported("geography")?
+  CalleOficina         String?                   @db.NVarChar(150)
+  NumeroOficina        String?                   @db.NVarChar(50)
+  CPOficina            String?                   @db.NVarChar(10)
+  ColoniaOficina       String?                   @db.NVarChar(100)
+  MunicipioOficina     String?                   @db.NVarChar(100)
+  EstadoOficina        String?                   @db.NVarChar(100)
+  PaisOficina          String?                   @default("México", map: "DF__Mina__PaisOficin__6D0D32F4") @db.NVarChar(50)
+  CorreoElectronico    String?                   @db.NVarChar(150)
+  TelefonoFijo         String?                   @db.NVarChar(20)
+  Extension            String?                   @db.NVarChar(10)
+  TelefonoMovil        String?                   @db.NVarChar(20)
+  Activo               Boolean?                  @default(true, map: "DF__Mina__Activo__6E01572D")
+  FechaCreacion        DateTime?                 @default(now(), map: "DF__Mina__FechaCreac__6EF57B66") @db.DateTime
+  FechaActualizacion   DateTime?                 @default(now(), map: "DF__Mina__FechaActua__6FE99F9F") @db.DateTime
+  ProspeccionLote      ProspeccionLote[]
+}
+
+model MovimientoAsignacion {
+  IdAsignacion       String              @id(map: "PK__Movimien__A7235DFFF4E589C3") @default(dbgenerated("newid()"), map: "DF__Movimient__IdAsi__4B7734FF") @db.UniqueIdentifier
+  IdMovimiento       String              @db.UniqueIdentifier
+  IdChofer           String              @db.UniqueIdentifier
+  IdVehiculo         String              @db.UniqueIdentifier
+  Turno              String              @db.NVarChar(50)
+  CapacidadEstimada  Decimal?            @db.Decimal(18, 4)
+  FechaAsignacion    DateTime?           @default(now(), map: "DF__Movimient__Fecha__4C6B5938") @db.DateTime
+  Activo             Boolean?            @default(true, map: "DF__Movimient__Activ__4D5F7D71")
+  FechaCreacion      DateTime?           @default(now(), map: "DF__Movimient__Fecha__4E53A1AA") @db.DateTime
+  FechaActualizacion DateTime?           @default(now(), map: "DF__Movimient__Fecha__4F47C5E3") @db.DateTime
+  Usuario            Usuario             @relation(fields: [IdChofer], references: [IdUsuario], onUpdate: NoAction, map: "FK_Asignacion_Chofer")
+  MovimientoTierra   MovimientoTierra    @relation(fields: [IdMovimiento], references: [IdMovimiento], onUpdate: NoAction, map: "FK_Asignacion_Movimiento")
+  Vehiculo           Vehiculo            @relation(fields: [IdVehiculo], references: [IdVehiculo], onUpdate: NoAction, map: "FK_Asignacion_Vehiculo")
+  MovimientoDompada  MovimientoDompada[]
+}
+
+model MovimientoDompada {
+  IdDompada            String               @id(map: "PK__Movimien__FDAF2367B7AB189D") @default(dbgenerated("newid()"), map: "DF__Movimient__IdDom__55009F39") @db.UniqueIdentifier
+  IdAsignacion         String               @db.UniqueIdentifier
+  NumeroExtraccion     Int
+  FechaHoraInicio      DateTime             @db.DateTime
+  FechaHoraFin         DateTime?            @db.DateTime
+  CantidadExtraida     Decimal              @db.Decimal(18, 4)
+  Destino              String               @db.NVarChar(100)
+  Activo               Boolean?             @default(true, map: "DF__Movimient__Activ__55F4C372")
+  FechaCreacion        DateTime?            @default(now(), map: "DF__Movimient__Fecha__56E8E7AB") @db.DateTime
+  FechaActualizacion   DateTime?            @default(now(), map: "DF__Movimient__Fecha__57DD0BE4") @db.DateTime
+  MovimientoAsignacion MovimientoAsignacion @relation(fields: [IdAsignacion], references: [IdAsignacion], onUpdate: NoAction, map: "FK_Dompada_Asignacion")
+}
+
+model MovimientoTierra {
+  IdMovimiento         String                 @id(map: "PK__Movimien__881A6AE0BD6AD79B") @default(dbgenerated("newid()"), map: "DF__Movimient__IdMov__42E1EEFE") @db.UniqueIdentifier
+  IdLote               String                 @unique(map: "UQ_Movimiento_Lote") @db.UniqueIdentifier
+  IdResponsable        String                 @db.UniqueIdentifier
+  EstatusOperacion     String?                @default("En_Progreso", map: "DF__Movimient__Estat__43D61337") @db.NVarChar(50)
+  Activo               Boolean?               @default(true, map: "DF__Movimient__Activ__44CA3770")
+  FechaCreacion        DateTime?              @default(now(), map: "DF__Movimient__Fecha__45BE5BA9") @db.DateTime
+  FechaActualizacion   DateTime?              @default(now(), map: "DF__Movimient__Fecha__46B27FE2") @db.DateTime
+  MovimientoAsignacion MovimientoAsignacion[]
+  ProspeccionLote      ProspeccionLote        @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Movimiento_Lote")
+  Usuario              Usuario                @relation(fields: [IdResponsable], references: [IdUsuario], onUpdate: NoAction, map: "FK_Movimiento_Responsable")
+}
+
+model NotificacionExterna_Cola {
+  IdMensaje         String    @id(map: "PK__Notifica__E4D2A47F53C8F6DD") @default(dbgenerated("newid()"), map: "DF__Notificac__IdMen__0D44F85C") @db.UniqueIdentifier
+  IdUsuarioDestino  String    @db.UniqueIdentifier
+  TipoMedio         String    @db.NVarChar(20)
+  Destinatario      String    @db.NVarChar(150)
+  Asunto            String?   @db.NVarChar(200)
+  CuerpoMensaje     String    @db.NVarChar(Max)
+  UrlArchivoAdjunto String?   @db.NVarChar(500)
+  EstatusEnvio      String?   @default("Pendiente", map: "DF__Notificac__Estat__0E391C95") @db.NVarChar(50)
+  IntentosEnvio     Int?      @default(0, map: "DF__Notificac__Inten__0F2D40CE")
+  RespuestaServidor String?   @db.NVarChar(Max)
+  FechaProgramada   DateTime? @default(now(), map: "DF__Notificac__Fecha__10216507") @db.DateTime
+  FechaEnvio        DateTime? @db.DateTime
+  Usuario           Usuario   @relation(fields: [IdUsuarioDestino], references: [IdUsuario], onUpdate: NoAction, map: "FK_Mensajeria_Usuario")
+}
+
+model NotificacionInterna {
+  IdNotificacion   String    @id(map: "PK__Notifica__F6CA0A85B7E46055") @default(dbgenerated("newid()"), map: "DF__Notificac__IdNot__0697FACD") @db.UniqueIdentifier
+  IdUsuarioDestino String    @db.UniqueIdentifier
+  Titulo           String    @db.NVarChar(150)
+  Mensaje          String    @db.NVarChar(Max)
+  UrlDestino       String?   @db.NVarChar(255)
+  Leida            Boolean?  @default(false, map: "DF__Notificac__Leida__078C1F06")
+  FechaLeida       DateTime? @db.DateTime
+  Activo           Boolean?  @default(true, map: "DF__Notificac__Activ__0880433F")
+  FechaCreacion    DateTime? @default(now(), map: "DF__Notificac__Fecha__09746778") @db.DateTime
+  Usuario          Usuario   @relation(fields: [IdUsuarioDestino], references: [IdUsuario], onUpdate: NoAction, map: "FK_Notificacion_Usuario")
+}
+
+model PermisoRol {
+  IdPermiso          String    @id(map: "PK__PermisoR__0D626EC878DE47A0") @default(dbgenerated("newid()"), map: "DF__PermisoRo__IdPer__52593CB8") @db.UniqueIdentifier
+  IdRol              String    @db.UniqueIdentifier
+  Modulo             String    @db.NVarChar(100)
+  Submodulo          String    @db.NVarChar(100)
+  PuedeAcceder       Boolean?  @default(false, map: "DF__PermisoRo__Puede__534D60F1")
+  PuedeRegistrar     Boolean?  @default(false, map: "DF__PermisoRo__Puede__5441852A")
+  PuedeModificar     Boolean?  @default(false, map: "DF__PermisoRo__Puede__5535A963")
+  PuedeConsultar     Boolean?  @default(false, map: "DF__PermisoRo__Puede__5629CD9C")
+  PuedeListar        Boolean?  @default(false, map: "DF__PermisoRo__Puede__571DF1D5")
+  PuedeFiltrar       Boolean?  @default(false, map: "DF__PermisoRo__Puede__5812160E")
+  PuedeHabilitar     Boolean?  @default(false, map: "DF__PermisoRo__Puede__59063A47")
+  PuedeDeshabilitar  Boolean?  @default(false, map: "DF__PermisoRo__Puede__59FA5E80")
+  Activo             Boolean?  @default(true, map: "DF__PermisoRo__Activ__5AEE82B9")
+  FechaCreacion      DateTime? @default(now(), map: "DF__PermisoRo__Fecha__5BE2A6F2") @db.DateTime
+  FechaActualizacion DateTime? @default(now(), map: "DF__PermisoRo__Fecha__5CD6CB2B") @db.DateTime
+  Rol                Rol       @relation(fields: [IdRol], references: [IdRol], onUpdate: NoAction, map: "FK_PermisoRol_Rol")
+
+  @@unique([IdRol, Modulo, Submodulo], map: "UQ_Rol_Modulo_Submodulo")
+}
+
+model PostProduccionCiclo {
+  IdPostProduccion                                            String          @id(map: "PK__PostProd__829E9F603E51F962") @default(dbgenerated("newid()"), map: "DF__PostProdu__IdPos__70A8B9AE") @db.UniqueIdentifier
+  IdCiclo                                                     String          @unique(map: "UQ__PostProd__AD4E49E6CE154BF8") @db.UniqueIdentifier
+  HumedadMermaPorcentaje                                      Decimal?        @db.Decimal(5, 2)
+  ConsumoCianuroKg                                            Decimal?        @db.Decimal(18, 4)
+  ObservacionesPost                                           String?         @db.NVarChar(Max)
+  EstatusValidacion                                           String?         @default("Pendiente_Validar", map: "DF__PostProdu__Estat__719CDDE7") @db.NVarChar(50)
+  MotivoRechazo                                               String?         @db.NVarChar(Max)
+  IdUsuarioOperador                                           String          @db.UniqueIdentifier
+  FechaRegistroPost                                           DateTime?       @default(now(), map: "DF__PostProdu__Fecha__72910220") @db.DateTime
+  IdUsuarioSupervisor                                         String?         @db.UniqueIdentifier
+  FechaValidacion                                             DateTime?       @db.DateTime
+  IdUsuarioInversionista                                      String?         @db.UniqueIdentifier
+  FechaVisto                                                  DateTime?       @db.DateTime
+  Activo                                                      Boolean?        @default(true, map: "DF__PostProdu__Activ__73852659")
+  FechaActualizacion                                          DateTime?       @default(now(), map: "DF__PostProdu__Fecha__74794A92") @db.DateTime
+  ProduccionCiclo                                             ProduccionCiclo @relation(fields: [IdCiclo], references: [IdCiclo], onUpdate: NoAction, map: "FK_Post_Ciclo")
+  Usuario_PostProduccionCiclo_IdUsuarioInversionistaToUsuario Usuario?        @relation("PostProduccionCiclo_IdUsuarioInversionistaToUsuario", fields: [IdUsuarioInversionista], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Post_Inversionista")
+  Usuario_PostProduccionCiclo_IdUsuarioOperadorToUsuario      Usuario         @relation("PostProduccionCiclo_IdUsuarioOperadorToUsuario", fields: [IdUsuarioOperador], references: [IdUsuario], onUpdate: NoAction, map: "FK_Post_Operador")
+  Usuario_PostProduccionCiclo_IdUsuarioSupervisorToUsuario    Usuario?        @relation("PostProduccionCiclo_IdUsuarioSupervisorToUsuario", fields: [IdUsuarioSupervisor], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Post_Supervisor")
+}
+
+model ProduccionCabecera {
+  IdProduccion       String             @id(map: "PK__Producci__3137BD838F233DEE") @default(dbgenerated("newid()"), map: "DF__Produccio__IdPro__5CA1C101") @db.UniqueIdentifier
+  IdLote             String             @unique(map: "UQ__Producci__38C4EE910704DB0D") @db.UniqueIdentifier
+  IdResponsable      String             @db.UniqueIdentifier
+  EstatusProduccion  String?            @default("Abierto", map: "DF__Produccio__Estat__5D95E53A") @db.NVarChar(50)
+  Activo             Boolean?           @default(true, map: "DF__Produccio__Activ__5E8A0973")
+  FechaCreacion      DateTime?          @default(now(), map: "DF__Produccio__Fecha__5F7E2DAC") @db.DateTime
+  FechaActualizacion DateTime?          @default(now(), map: "DF__Produccio__Fecha__607251E5") @db.DateTime
+  ProspeccionLote    ProspeccionLote    @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Produccion_Lote")
+  Usuario            Usuario            @relation(fields: [IdResponsable], references: [IdUsuario], onUpdate: NoAction, map: "FK_Produccion_Responsable")
+  ProduccionCiclo    ProduccionCiclo[]
+  ProduccionCierre   ProduccionCierre[]
+}
+
+model ProduccionCiclo {
+  IdCiclo                                               String               @id(map: "PK__Producci__AD4E49E72999A74F") @default(dbgenerated("newid()"), map: "DF__Produccio__IdCic__65370702") @db.UniqueIdentifier
+  IdProduccion                                          String               @db.UniqueIdentifier
+  Turno                                                 String               @db.NVarChar(50)
+  NumeroCiclo                                           Int
+  FechaHoraInicio                                       DateTime?            @db.DateTime
+  FechaHoraFin                                          DateTime?            @db.DateTime
+  ToneladasProcesadas                                   Decimal?             @db.Decimal(18, 4)
+  LeyCiclo                                              Decimal?             @db.Decimal(10, 4)
+  RecuperacionPorcentaje                                Decimal?             @db.Decimal(5, 2)
+  OroEstimadoGramos                                     Decimal?             @db.Decimal(18, 4)
+  OroObtenidoGramos                                     Decimal?             @db.Decimal(18, 4)
+  ColasGeneradas                                        Decimal?             @db.Decimal(18, 4)
+  Observaciones                                         String?              @db.NVarChar(Max)
+  EstadoCiclo                                           String?              @default("Pendiente", map: "DF__Produccio__Estad__662B2B3B") @db.NVarChar(50)
+  IdUsuarioPendiente                                    String?              @db.UniqueIdentifier
+  FechaPendiente                                        DateTime?            @default(now(), map: "DF__Produccio__Fecha__671F4F74") @db.DateTime
+  IdUsuarioProceso                                      String?              @db.UniqueIdentifier
+  FechaProceso                                          DateTime?            @db.DateTime
+  IdUsuarioFinalizado                                   String?              @db.UniqueIdentifier
+  FechaFinalizado                                       DateTime?            @db.DateTime
+  Activo                                                Boolean?             @default(true, map: "DF__Produccio__Activ__681373AD")
+  MotivoDeshabilitacion                                 String?              @db.NVarChar(Max)
+  IdUsuarioDeshabilita                                  String?              @db.UniqueIdentifier
+  FechaDeshabilitacion                                  DateTime?            @db.DateTime
+  PostProduccionCiclo                                   PostProduccionCiclo?
+  ProduccionCabecera                                    ProduccionCabecera   @relation(fields: [IdProduccion], references: [IdProduccion], onUpdate: NoAction, map: "FK_Ciclo_Produccion")
+  Usuario_ProduccionCiclo_IdUsuarioDeshabilitaToUsuario Usuario?             @relation("ProduccionCiclo_IdUsuarioDeshabilitaToUsuario", fields: [IdUsuarioDeshabilita], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Ciclo_UsuDeshabilita")
+  Usuario_ProduccionCiclo_IdUsuarioFinalizadoToUsuario  Usuario?             @relation("ProduccionCiclo_IdUsuarioFinalizadoToUsuario", fields: [IdUsuarioFinalizado], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Ciclo_UsuFinalizado")
+  Usuario_ProduccionCiclo_IdUsuarioPendienteToUsuario   Usuario?             @relation("ProduccionCiclo_IdUsuarioPendienteToUsuario", fields: [IdUsuarioPendiente], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Ciclo_UsuPendiente")
+  Usuario_ProduccionCiclo_IdUsuarioProcesoToUsuario     Usuario?             @relation("ProduccionCiclo_IdUsuarioProcesoToUsuario", fields: [IdUsuarioProceso], references: [IdUsuario], onDelete: NoAction, onUpdate: NoAction, map: "FK_Ciclo_UsuProceso")
+}
+
+model ProduccionCierre {
+  IdCierre                 String             @id(map: "PK__Producci__7BB331EFE560FC27") @default(dbgenerated("newid()"), map: "DF__Produccio__IdCie__7B264821") @db.UniqueIdentifier
+  IdProduccion             String             @db.UniqueIdentifier
+  IdSupervisor             String             @db.UniqueIdentifier
+  TipoCierre               String             @db.NVarChar(50)
+  FechaOperacion           DateTime           @db.Date
+  Turno                    String?            @db.NVarChar(50)
+  TotalToneladasProcesadas Decimal            @db.Decimal(18, 4)
+  TotalOroObtenido         Decimal            @db.Decimal(18, 4)
+  TotalColas               Decimal            @db.Decimal(18, 4)
+  Observaciones            String?            @db.NVarChar(Max)
+  FechaRegistro            DateTime?          @default(now(), map: "DF__Produccio__Fecha__7C1A6C5A") @db.DateTime
+  ProduccionCabecera       ProduccionCabecera @relation(fields: [IdProduccion], references: [IdProduccion], onUpdate: NoAction, map: "FK_Cierre_Produccion")
+  Usuario                  Usuario            @relation(fields: [IdSupervisor], references: [IdUsuario], onUpdate: NoAction, map: "FK_Cierre_Supervisor")
+}
+
+model ProspeccionLote {
+  IdLote                 String                   @id(map: "PK__Prospecc__38C4EE9011940341") @default(dbgenerated("newid()"), map: "DF__Prospecci__IdLot__160F4887") @db.UniqueIdentifier
+  IdMina                 String                   @db.UniqueIdentifier
+  IdEstatusProspeccion   String                   @db.UniqueIdentifier
+  IdResponsable          String                   @db.UniqueIdentifier
+  NombreAlias            String                   @db.NVarChar(150)
+  FechaRegistro          DateTime                 @default(now(), map: "DF__Prospecci__Fecha__17036CC0") @db.DateTime
+  FechaMuestreo          DateTime?                @db.DateTime
+  MetodoMuestreo         String?                  @db.NVarChar(100)
+  LeyEstimada            Decimal?                 @db.Decimal(10, 4)
+  TonelajeEstimado       Decimal?                 @db.Decimal(18, 4)
+  Observaciones          String?                  @db.NVarChar(Max)
+  Activo                 Boolean?                 @default(true, map: "DF__Prospecci__Activ__17F790F9")
+  FechaCreacion          DateTime?                @default(now(), map: "DF__Prospecci__Fecha__18EBB532") @db.DateTime
+  FechaActualizacion     DateTime?                @default(now(), map: "DF__Prospecci__Fecha__19DFD96B") @db.DateTime
+  ControlCierre          ControlCierre[]
+  LoteCoordenada         LoteCoordenada[]
+  LoteEvidencia          LoteEvidencia[]
+  MovimientoTierra       MovimientoTierra?
+  ProduccionCabecera     ProduccionCabecera?
+  EstatusProspeccion     EstatusProspeccion       @relation(fields: [IdEstatusProspeccion], references: [IdEstatusProspeccion], onUpdate: NoAction, map: "FK_Lote_Estatus")
+  Mina                   Mina                     @relation(fields: [IdMina], references: [IdMina], onUpdate: NoAction, map: "FK_Lote_Mina")
+  Usuario                Usuario                  @relation(fields: [IdResponsable], references: [IdUsuario], onUpdate: NoAction, map: "FK_Lote_Responsable")
+  ProspeccionMuestra     ProspeccionMuestra[]
+  ProspeccionSeguimiento ProspeccionSeguimiento[]
+}
+
+model ProspeccionMuestra {
+  IdMuestra            String                 @id(map: "PK__Prospecc__C3A7DA6FE34C345B") @default(dbgenerated("newid()"), map: "DF__Prospecci__IdMue__2B0A656D") @db.UniqueIdentifier
+  IdLote               String                 @db.UniqueIdentifier
+  IdResponsable        String                 @db.UniqueIdentifier
+  CodigoEtiqueta       String                 @db.NVarChar(100)
+  FechaMuestreo        DateTime               @default(now(), map: "DF__Prospecci__Fecha__2BFE89A6") @db.DateTime
+  Observaciones        String?                @db.NVarChar(Max)
+  Activo               Boolean?               @default(true, map: "DF__Prospecci__Activ__2CF2ADDF")
+  FechaCreacion        DateTime?              @default(now(), map: "DF__Prospecci__Fecha__2DE6D218") @db.DateTime
+  FechaActualizacion   DateTime?              @default(now(), map: "DF__Prospecci__Fecha__2EDAF651") @db.DateTime
+  ProspeccionLote      ProspeccionLote        @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Muestra_Lote")
+  Usuario              Usuario                @relation(fields: [IdResponsable], references: [IdUsuario], onUpdate: NoAction, map: "FK_Muestra_Responsable")
+  SeguimientoEvidencia SeguimientoEvidencia[]
+}
+
+model ProspeccionSeguimiento {
+  IdSeguimiento          String                 @id(map: "PK__Prospecc__5643F60F40062692") @default(dbgenerated("newid()"), map: "DF__Prospecci__IdSeg__339FAB6E") @db.UniqueIdentifier
+  IdLote                 String                 @db.UniqueIdentifier
+  IdEstatusNuevo         String                 @db.UniqueIdentifier
+  IdUsuarioAccion        String                 @db.UniqueIdentifier
+  CriterioCorteUsado     Decimal?               @db.Decimal(10, 4)
+  MotivoCambio           String?                @db.NVarChar(Max)
+  ObservacionesGenerales String?                @db.NVarChar(Max)
+  FechaRegistro          DateTime?              @default(now(), map: "DF__Prospecci__Fecha__3493CFA7") @db.DateTime
+  Activo                 Boolean?               @default(true, map: "DF__Prospecci__Activ__3587F3E0")
+  EstatusProspeccion     EstatusProspeccion     @relation(fields: [IdEstatusNuevo], references: [IdEstatusProspeccion], onUpdate: NoAction, map: "FK_Seguimiento_Estatus")
+  ProspeccionLote        ProspeccionLote        @relation(fields: [IdLote], references: [IdLote], onUpdate: NoAction, map: "FK_Seguimiento_Lote")
+  Usuario                Usuario                @relation(fields: [IdUsuarioAccion], references: [IdUsuario], onUpdate: NoAction, map: "FK_Seguimiento_Usuario")
+  SeguimientoEvidencia   SeguimientoEvidencia[]
+}
+
+model Rol {
+  IdRol              String       @id(map: "PK__Rol__2A49584C4544DEC1") @default(dbgenerated("newid()"), map: "DF__Rol__IdRol__4BAC3F29") @db.UniqueIdentifier
+  Nombre             String       @unique(map: "UQ__Rol__75E3EFCF79402356") @db.NVarChar(100)
+  Descripcion        String?      @db.NVarChar(255)
+  Activo             Boolean?     @default(true, map: "DF__Rol__Activo__4CA06362")
+  FechaCreacion      DateTime?    @default(now(), map: "DF__Rol__FechaCreaci__4D94879B") @db.DateTime
+  FechaActualizacion DateTime?    @default(now(), map: "DF__Rol__FechaActual__4E88ABD4") @db.DateTime
+  PermisoRol         PermisoRol[]
+  Usuario            Usuario[]
+}
+
+model SeguimientoEvidencia {
+  IdEvidencia            String                  @id(map: "PK__Seguimie__C602EF7EFCCF7290") @default(dbgenerated("newid()"), map: "DF__Seguimien__IdEvi__3B40CD36") @db.UniqueIdentifier
+  IdSeguimiento          String?                 @db.UniqueIdentifier
+  IdMuestra              String?                 @db.UniqueIdentifier
+  TipoArchivo            String                  @db.NVarChar(50)
+  RutaArchivo            String                  @db.NVarChar(500)
+  Activo                 Boolean?                @default(true, map: "DF__Seguimien__Activ__3C34F16F")
+  FechaCaptura           DateTime?               @default(now(), map: "DF__Seguimien__Fecha__3D2915A8") @db.DateTime
+  ProspeccionMuestra     ProspeccionMuestra?     @relation(fields: [IdMuestra], references: [IdMuestra], onDelete: NoAction, onUpdate: NoAction, map: "FK_Evidencia_Muestra")
+  ProspeccionSeguimiento ProspeccionSeguimiento? @relation(fields: [IdSeguimiento], references: [IdSeguimiento], onDelete: NoAction, onUpdate: NoAction, map: "FK_Evidencia_Seguimiento")
+}
+
+model SubUnidadMedida {
+  IdSubUnidadMedida  String       @id(map: "PK__SubUnida__354A0281D46504A7") @default(dbgenerated("newid()"), map: "DF__SubUnidad__IdSub__797309D9") @db.UniqueIdentifier
+  IdUnidadMedida     String       @db.UniqueIdentifier
+  Nombre             String       @db.NVarChar(100)
+  Simbolo            String       @db.NVarChar(50)
+  Activo             Boolean?     @default(true, map: "DF__SubUnidad__Activ__7A672E12")
+  FechaCreacion      DateTime?    @default(now(), map: "DF__SubUnidad__Fecha__7B5B524B") @db.DateTime
+  FechaActualizacion DateTime?    @default(now(), map: "DF__SubUnidad__Fecha__7C4F7684") @db.DateTime
+  UnidadMedida       UnidadMedida @relation(fields: [IdUnidadMedida], references: [IdUnidadMedida], onUpdate: NoAction, map: "FK_SubUnidad_Unidad")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B6120F24A65") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}
+
+model TipoRoca {
+  IdTipoRoca         String    @id(map: "PK__TipoRoca__F40A9B5BFFDA872B") @default(dbgenerated("newid()"), map: "DF__TipoRoca__IdTipo__01142BA1") @db.UniqueIdentifier
+  Nombre             String    @unique(map: "UQ__TipoRoca__75E3EFCFC63D0AC3") @db.NVarChar(100)
+  Activo             Boolean?  @default(true, map: "DF__TipoRoca__Activo__02084FDA")
+  FechaCreacion      DateTime? @default(now(), map: "DF__TipoRoca__FechaC__02FC7413") @db.DateTime
+  FechaActualizacion DateTime? @default(now(), map: "DF__TipoRoca__FechaA__03F0984C") @db.DateTime
+}
+
+model UnidadMedida {
+  IdUnidadMedida     String            @id(map: "PK__UnidadMe__18F83A931564927F") @default(dbgenerated("newid()"), map: "DF__UnidadMed__IdUni__73BA3083") @db.UniqueIdentifier
+  Nombre             String            @unique(map: "UQ__UnidadMe__75E3EFCF78668E3E") @db.NVarChar(100)
+  Activo             Boolean?          @default(true, map: "DF__UnidadMed__Activ__74AE54BC")
+  FechaCreacion      DateTime?         @default(now(), map: "DF__UnidadMed__Fecha__75A278F5") @db.DateTime
+  FechaActualizacion DateTime?         @default(now(), map: "DF__UnidadMed__Fecha__76969D2E") @db.DateTime
+  SubUnidadMedida    SubUnidadMedida[]
+}
+
+model Usuario {
+  IdUsuario                                                               String                     @id(map: "PK__Usuario__5B65BF9786FF39B6") @default(dbgenerated("newid()"), map: "DF__Usuario__IdUsuar__628FA481") @db.UniqueIdentifier
+  IdRol                                                                   String                     @db.UniqueIdentifier
+  Nombres                                                                 String                     @db.NVarChar(100)
+  ApellidoPaterno                                                         String                     @db.NVarChar(100)
+  ApellidoMaterno                                                         String?                    @db.NVarChar(100)
+  CorreoElectronico                                                       String                     @unique(map: "UQ__Usuario__531402F30C851B00") @db.NVarChar(150)
+  NumeroCelular                                                           String?                    @db.NVarChar(20)
+  NombreUsuario                                                           String                     @unique(map: "UQ__Usuario__6B0F5AE07E1691A1") @db.NVarChar(50)
+  ContrasenaHash                                                          String                     @db.NVarChar(255)
+  Activo                                                                  Boolean?                   @default(true, map: "DF__Usuario__Activo__6383C8BA")
+  FechaCreacion                                                           DateTime?                  @default(now(), map: "DF__Usuario__FechaCr__6477ECF3") @db.DateTime
+  FechaActualizacion                                                      DateTime?                  @default(now(), map: "DF__Usuario__FechaAc__656C112C") @db.DateTime
+  AuditoriaBitacora                                                       AuditoriaBitacora[]
+  ControlCierre                                                           ControlCierre[]
+  MovimientoAsignacion                                                    MovimientoAsignacion[]
+  MovimientoTierra                                                        MovimientoTierra[]
+  NotificacionExterna_Cola                                                NotificacionExterna_Cola[]
+  NotificacionInterna                                                     NotificacionInterna[]
+  PostProduccionCiclo_PostProduccionCiclo_IdUsuarioInversionistaToUsuario PostProduccionCiclo[]      @relation("PostProduccionCiclo_IdUsuarioInversionistaToUsuario")
+  PostProduccionCiclo_PostProduccionCiclo_IdUsuarioOperadorToUsuario      PostProduccionCiclo[]      @relation("PostProduccionCiclo_IdUsuarioOperadorToUsuario")
+  PostProduccionCiclo_PostProduccionCiclo_IdUsuarioSupervisorToUsuario    PostProduccionCiclo[]      @relation("PostProduccionCiclo_IdUsuarioSupervisorToUsuario")
+  ProduccionCabecera                                                      ProduccionCabecera[]
+  ProduccionCiclo_ProduccionCiclo_IdUsuarioDeshabilitaToUsuario           ProduccionCiclo[]          @relation("ProduccionCiclo_IdUsuarioDeshabilitaToUsuario")
+  ProduccionCiclo_ProduccionCiclo_IdUsuarioFinalizadoToUsuario            ProduccionCiclo[]          @relation("ProduccionCiclo_IdUsuarioFinalizadoToUsuario")
+  ProduccionCiclo_ProduccionCiclo_IdUsuarioPendienteToUsuario             ProduccionCiclo[]          @relation("ProduccionCiclo_IdUsuarioPendienteToUsuario")
+  ProduccionCiclo_ProduccionCiclo_IdUsuarioProcesoToUsuario               ProduccionCiclo[]          @relation("ProduccionCiclo_IdUsuarioProcesoToUsuario")
+  ProduccionCierre                                                        ProduccionCierre[]
+  ProspeccionLote                                                         ProspeccionLote[]
+  ProspeccionMuestra                                                      ProspeccionMuestra[]
+  ProspeccionSeguimiento                                                  ProspeccionSeguimiento[]
+  Rol                                                                     Rol                        @relation(fields: [IdRol], references: [IdRol], onUpdate: NoAction, map: "FK_Usuario_Rol")
+}
+
+model Vehiculo {
+  IdVehiculo           String                 @id(map: "PK__Vehiculo__7086121517974642") @default(dbgenerated("newid()"), map: "DF__Vehiculo__IdVehi__0F624AF8") @db.UniqueIdentifier
+  CodigoVehiculo       String                 @unique(map: "UQ__Vehiculo__87AE878E108FCB71") @db.NVarChar(50)
+  NumeroEconomico      String                 @unique(map: "UQ__Vehiculo__27F0A26BAA535237") @db.NVarChar(50)
+  Categoria            String                 @db.NVarChar(100)
+  TipoVehiculo         String                 @db.NVarChar(100)
+  SubtipoVehiculo      String                 @db.NVarChar(100)
+  Marca                String                 @db.NVarChar(100)
+  Modelo               String                 @db.NVarChar(100)
+  Anio                 Int?
+  Placas               String?                @db.NVarChar(50)
+  EstadoOperacion      String                 @default("Disponible", map: "DF__Vehiculo__Estado__10566F31") @db.NVarChar(50)
+  Activo               Boolean?               @default(true, map: "DF__Vehiculo__Activo__114A936A")
+  FechaCreacion        DateTime?              @default(now(), map: "DF__Vehiculo__FechaC__123EB7A3") @db.DateTime
+  FechaActualizacion   DateTime?              @default(now(), map: "DF__Vehiculo__FechaA__1332DBDC") @db.DateTime
+  MovimientoAsignacion MovimientoAsignacion[]
 }
