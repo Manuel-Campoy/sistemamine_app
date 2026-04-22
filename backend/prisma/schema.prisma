@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// 1. SEGURIDAD Y ROLES
+// ==========================================
+model rol {
+  idrol  String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre String @unique @db.VarChar(100)
+
+  usuarios usuario[]
+}
+
+model usuario {
+  idusuario          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idrol              String   @db.Uuid
+  nombre             String   @db.VarChar(100)
+  apellidopaterno    String   @db.VarChar(100)
+  apellidomaterno    String?  @db.VarChar(100)
+  correo             String   @unique @db.VarChar(150)
+  celular            String?  @db.VarChar(20)
+  nombreusuario      String   @unique @db.VarChar(50)
+  contrasenahash     String   @db.VarChar(255)
+  activo             Boolean? @default(true)
+  fechacreacion      DateTime @default(now()) @db.Timestamp(6)
+  fechaactualizacion DateTime @updatedAt @db.Timestamp(6)
+
+  // Relaciones
+  rol               rol                 @relation(fields: [idrol], references: [idrol])
+  prospecciones     prospeccion[]
+  movimientostierra movimientotierra[]
+  auditorias        auditoriabitacora[]
+
+  ciclos_registrados produccionciclo[] @relation("RolRegistra")
+  ciclos_en_proceso  produccionciclo[] @relation("RolProceso")
+  ciclos_finalizados produccionciclo[] @relation("RolFinalizado")
+
+  ciclos_cierre_turno produccionciclo[] @relation("RolCierreTurno")
+  ciclos_cierre_dia   produccionciclo[] @relation("RolCierreDia")
+  ciclos_cierre_lote  produccionciclo[] @relation("RolCierreLote")
+
+  recargasCombustible recargacombustible[]
+}
+
+// ==========================================
+// 2. CATÁLOGOS GENERALES
+// ==========================================
+model unidadmedida {
+  idunidadmedida String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre         String @db.VarChar(100)
+
+  subunidades subunidadmedida[]
+}
+
+model subunidadmedida {
+  idsubunidadmedida String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idunidadmedida    String @db.Uuid
+  nombre            String @db.VarChar(100)
+
+  unidadmedida unidadmedida @relation(fields: [idunidadmedida], references: [idunidadmedida])
+}
+
+model tiporoca {
+  idtiporoca String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipoderoca String @unique @db.VarChar(100)
+}
+
+model estatusprospeccion {
+  idestatusprospeccion String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  descripcion          String @unique @db.VarChar(100)
+
+  prospecciones prospeccion[]
+}
+
+// ==========================================
+// 3. INFRAESTRUCTURA Y EQUIPO
+// ==========================================
+model minaempresa {
+  idmina               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  claveminera          String   @unique @db.VarChar(50)
+  nombreempresa        String   @db.VarChar(150)
+  aliasmina            String   @db.VarChar(100)
+  tipomina             String   @db.VarChar(50)
+  metodoextraccion     String   @db.VarChar(100)
+  mineralesprincipales String?  @db.VarChar(100)
+  estatusoperacion     String   @db.VarChar(50)
+  direccionmina        String?  @db.VarChar(255)
+  poligonoubicacion    String?
+  calleoficina         String?  @db.VarChar(150)
+  numerooficina        String?  @db.VarChar(50)
+  cpoficina            String?  @db.VarChar(10)
+  coloniaoficina       String?  @db.VarChar(100)
+  municipiooficina     String?  @db.VarChar(100)
+  estadooficina        String?  @db.VarChar(100)
+  paisoficina          String   @default("México") @db.VarChar(50)
+  correoelectronico    String?  @db.VarChar(150)
+  telefonofijo         String?  @db.VarChar(20)
+  extension            String?  @db.VarChar(10)
+  telefonomovil        String?  @db.VarChar(20)
+  activo               Boolean? @default(true)
+
+  prospecciones prospeccion[]
+}
+
+model vehiculo {
+  idvehiculo         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigovehiculo     String   @unique @db.VarChar(50)
+  numeroeconomico    String   @unique @db.VarChar(50)
+  categoria          String   @db.VarChar(100)
+  tipovehiculo       String   @db.VarChar(100)
+  subtipovehiculo    String   @db.VarChar(100)
+  marca              String   @db.VarChar(100)
+  modelo             String   @db.VarChar(100)
+  anio               Int?
+  placas             String?  @db.VarChar(50)
+  estadooperacion    String   @default("Disponible") @db.VarChar(50)
+  activo             Boolean? @default(true)
+  fechacreacion      DateTime @default(now()) @db.Timestamp(6)
+  fechaactualizacion DateTime @updatedAt @db.Timestamp(6)
+
+  movimientostierra movimientotierra[]
+  recargasCombustible recargacombustible[]
+}
+
+// ==========================================
+// 4. OPERACIÓN MINERA (PROSPECCIÓN Y EXTRACCIÓN)
+// ==========================================
+model prospeccion {
+  idarealote           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idmina               String    @db.Uuid
+  idestatusprospeccion String    @db.Uuid
+  idresponsable        String    @db.Uuid
+  fecharegistro        DateTime  @default(now()) @db.Timestamp(6)
+  nombrealias          String    @db.VarChar(150)
+  coordenadas          Json?
+  fechayhoramuestreo   DateTime? @db.Timestamp(6)
+  metodomuestreo       String?   @db.VarChar(100)
+  leyestimada          Decimal?  @db.Decimal(10, 4)
+  tonelajeestimado     Decimal?  @db.Decimal(18, 4)
+  observaciones        String?
+
+  // Relaciones
+  mina        minaempresa        @relation(fields: [idmina], references: [idmina])
+  estatus     estatusprospeccion @relation(fields: [idestatusprospeccion], references: [idestatusprospeccion])
+  responsable usuario            @relation(fields: [idresponsable], references: [idusuario])
+
+  movimientostierra movimientotierra[]
+  ciclos_produccion produccionciclo[]
+}
+
+model movimientotierra {
+  idmovimiento      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idarealote        String    @db.Uuid
+  idresponsable     String    @db.Uuid
+  idvehiculo        String    @db.Uuid
+  turno             String    @db.VarChar(50)
+  capacidadestimada Decimal?  @db.Decimal(10, 2)
+  numeroextraccion  Int
+  fechayhorainicio  DateTime  @db.Timestamp(6)
+  fechayhorafin     DateTime? @db.Timestamp(6)
+  cantidadextraida  Decimal?  @db.Decimal(10, 2)
+  destino           String    @db.VarChar(100)
+
+  // Relaciones
+  lote        prospeccion @relation(fields: [idarealote], references: [idarealote])
+  responsable usuario     @relation(fields: [idresponsable], references: [idusuario])
+  vehiculo    vehiculo    @relation(fields: [idvehiculo], references: [idvehiculo])
+}
+
+// ==========================================
+// 5. AUDITORÍA Y NOTIFICACIONES
+// ==========================================
+model auditoriabitacora {
+  idauditoria        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idusuario          String   @db.Uuid
+  accion             String   @db.VarChar(255)
+  entidadafectada    String   @db.VarChar(100)
+  idregistroafectado String   @db.VarChar(100)
+  valoresantes       String?  @db.Text
+  valoresdespues     String?  @db.Text
+  fechahora          DateTime @default(now()) @db.Timestamp(6)
+
+  // Relación
+  usuario usuario @relation(fields: [idusuario], references: [idusuario])
+}
+
+model notificacion {
+  idnotificacion String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo         String   @db.VarChar(255)
+  mensaje        String
+  tipo           String   @db.VarChar(50)
+  leida          Boolean  @default(false)
+  fechacreacion  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+// ==========================================
+// 6. PRODUCCIÓN EN PLANTA
+// ==========================================
+model produccionciclo {
+  idciclo                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  idarealote             String    @db.Uuid
+  numerociclo            Int
+  turno                  String    @db.VarChar(50)
+  fechaoperacion         DateTime  @db.Date
+  fechahorainicio        DateTime  @db.Timestamptz(6)
+  fechahorafin           DateTime? @db.Timestamptz(6)
+  toneladasprocesadas    Decimal   @db.Decimal(10, 3)
+  leyciclo               Decimal?  @db.Decimal(10, 3)
+  recuperacionporcentaje Decimal?  @db.Decimal(5, 2)
+  oroestimadogramos      Decimal?  @db.Decimal(10, 3)
+  oroobtenidogramos      Decimal?  @db.Decimal(10, 3)
+  colastoneladas         Decimal?  @db.Decimal(10, 3)
+  observaciones          String?
+  estado                 String?   @default("Pendiente") @db.VarChar(50)
+  motivodeshabilitado    String?
+  activo                 Boolean?  @default(true)
+
+  // --- CAMPOS DE POST-PRODUCCIÓN ---
+  humedadmerma      Decimal? @db.Decimal(5, 2)
+  conscianuro       Decimal? @db.Decimal(10, 3)
+  estatusvalidacion String?  @default("Pendiente validar") @db.VarChar(50)
+
+  // --- AUDITORÍA DE OPERACIÓN ---
+  usuarioregistra   String?   @db.Uuid
+  fecharegistro     DateTime? @default(now()) @db.Timestamptz(6)
+  usuarioenproceso  String?   @db.Uuid
+  fechaenproceso    DateTime? @db.Timestamptz(6)
+  usuariofinalizado String?   @db.Uuid
+  fechafinalizado   DateTime? @db.Timestamptz(6)
+
+  // --- AUDITORÍA DE CIERRES ---
+  usuariocierreturno String?   @db.Uuid
+  fechacierreturno   DateTime? @db.Timestamptz(6)
+
+  usuariocierredia String?   @db.Uuid
+  fechacierredia   DateTime? @db.Timestamptz(6)
+
+  usuariocierrelote String?   @db.Uuid
+  fechacierrelote   DateTime? @db.Timestamptz(6)
+
+  // Relaciones
+  prospeccion prospeccion @relation(fields: [idarealote], references: [idarealote])
+
+  usuarioRegistra   usuario? @relation("RolRegistra", fields: [usuarioregistra], references: [idusuario])
+  usuarioEnProceso  usuario? @relation("RolProceso", fields: [usuarioenproceso], references: [idusuario])
+  usuarioFinalizado usuario? @relation("RolFinalizado", fields: [usuariofinalizado], references: [idusuario])
+
+  usuarioCierreTurno usuario? @relation("RolCierreTurno", fields: [usuariocierreturno], references: [idusuario])
+  usuarioCierreDia   usuario? @relation("RolCierreDia", fields: [usuariocierredia], references: [idusuario])
+  usuarioCierreLote  usuario? @relation("RolCierreLote", fields: [usuariocierrelote], references: [idusuario])
+}
+
+// ==========================================
+// 7. CONTROL DE COMBUSTIBLE
+// ==========================================
+model recargacombustible {
+  idrecarga       String   @id @default(uuid()) @db.Uuid
+  idvehiculo      String   @db.Uuid
+  idusuario       String   @db.Uuid
+  fechayhora      DateTime @default(now())
+  litros          Float
+  horometro       Float?   
+  turno           String
+  observaciones   String?
+
+  // Relaciones 
+  vehiculo        vehiculo @relation(fields: [idvehiculo], references: [idvehiculo])
+  usuario         usuario  @relation(fields: [idusuario], references: [idusuario])
+}
+
+model RolPermiso {
+  idrolpermiso String  @id @default(uuid()) @db.Uuid
+  rol          String  
+  permisoClave String  
+  modulo       String? 
+
+  // Restricción para evitar que se asigne el mismo permiso dos veces al mismo rol
+  @@unique([rol, permisoClave]) 
+}
