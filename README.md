@@ -238,7 +238,7 @@ npm run preview        # Preview de build local
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Error: `DATABASE_URL` no configurada
 ```
