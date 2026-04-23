@@ -30,6 +30,9 @@ model usuario {
   fechacreacion      DateTime @default(now()) @db.Timestamp(6)
   fechaactualizacion DateTime @updatedAt @db.Timestamp(6)
 
+  codigorecuperacion String?  @db.VarChar(6)
+  expiracioncodigo   DateTime?
+
   // Relaciones
   rol               rol                 @relation(fields: [idrol], references: [idrol])
   prospecciones     prospeccion[]
