@@ -1,39 +1,41 @@
 import { useState, useEffect } from 'react';
 
-interface props {
-    onNavigate: (view: 'LOGIN' | 'RECOVERY' | 'LOCKED') => void;
+interface Props {
+  onNavigate: (view: 'LOGIN' | 'RECOVERY' | 'LOCKED') => void;
 }
 
-export default function AccountLocked({ onNavigate } : props) {
-    const [timeLeft, setTimeLeft] = useState(15*60);
+export default function AccountLocked({ onNavigate }: Props) {
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
 
-    useEffect(() => {
-        if (timeLeft <= 0) {
-            onNavigate('LOGIN');
-            return;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(timer);
+          onNavigate('LOGIN');
+          return 0;
         }
+        return prevTime - 1;
+      });
+    }, 1000);
 
-        const timer = setInterval(() => {
-            setTimeLeft((prev)=> prev - 1);
-        }, 1000);
+    return () => clearInterval(timer);
+  }, [onNavigate]);
 
-        return () => clearInterval(timer);
-    },[timeLeft, onNavigate]);
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-    return (
-        <div className="login-card">
-      <div className="card-header" style={{ background: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)' }}>
+  return (
+    <div className="login-card" style={{ maxWidth: '450px', width: '100%', margin: '0 auto' }}>
+      <div className="card-header" style={{ background: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)', color: 'white' }}>
         <div className="logo">🔒</div>
-        <h1 className="card-title">Cuenta Bloqueada</h1>
-        <p className="card-subtitle">Medida de seguridad activada</p>
+        <h1 className="card-title" style={{ color: 'white' }}>Cuenta Bloqueada</h1>
+        <p className="card-subtitle" style={{ color: '#fee2e2' }}>Medida de seguridad activada</p>
       </div>
 
       <div className="card-body">
-        <div className="alert alert-error">
+        <div className="alert alert-error" style={{ background: '#fee2e2', color: '#991b1b', border: '1px solid #f87171' }}>
           <span className="alert-icon">⛔</span>
           <span><strong>Acceso denegado:</strong> Tu cuenta ha sido bloqueada temporalmente debido a múltiples intentos fallidos.</span>
         </div>
@@ -54,7 +56,7 @@ export default function AccountLocked({ onNavigate } : props) {
           <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' }}>
             💡 ¿Necesitas acceso inmediato?
           </div>
-          <p style={{ fontSize: '0.875rem', color: '#78350f' }}>
+          <p style={{ fontSize: '0.875rem', color: '#78350f', margin: 0 }}>
             Contacta al administrador del sistema para desbloquear tu cuenta mediante consola.
           </p>
         </div>
@@ -64,8 +66,8 @@ export default function AccountLocked({ onNavigate } : props) {
         </button>
       </div>
 
-      <div className="card-footer" style={{ background: '#fee2e2' }}>
-        <p style={{ color: '#991b1b' }}>
+      <div className="card-footer" style={{ background: '#fee2e2', padding: '1rem', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', textAlign: 'center' }}>
+        <p style={{ color: '#991b1b', margin: 0, fontSize: '0.85rem' }}>
           <strong>Seguridad:</strong> Este bloqueo protege tu cuenta de accesos no autorizados.
         </p>
       </div>

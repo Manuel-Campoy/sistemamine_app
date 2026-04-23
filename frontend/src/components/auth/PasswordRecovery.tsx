@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import api from '../../api/axiosConfig'; // Ajusta la ruta si es necesario
 
 interface Props {
   onNavigate: (view: 'LOGIN' | 'RECOVERY' | 'LOCKED') => void;
@@ -13,6 +14,9 @@ export default function PasswordRecovery({ onNavigate }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
   const hasLength = newPassword.length >= 8;
   const hasUpper = /[A-Z]/.test(newPassword);
   const hasNumber = /[0-9]/.test(newPassword);
@@ -20,20 +24,55 @@ export default function PasswordRecovery({ onNavigate }: Props) {
   const isValidPassword = hasLength && hasUpper && hasNumber && hasSpecial;
   const passwordsMatch = newPassword === confirmPassword && newPassword !== '';
 
-  const handleSendCode = (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2); 
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      await api.post('/auth/olvide-password', { email });
+      setStep(2); 
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || 'Error al conectar con el servidor.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerifyCode = (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(3); 
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      await api.post('/auth/verificar-codigo', { email, codigo: code });
+      setStep(3); 
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || 'El código es incorrecto o ha caducado.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSetNewPassword = (e: React.FormEvent) => {
+  const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (isValidPassword && passwordsMatch) {
-      setStep(4); 
+      setErrorMsg('');
+      setIsLoading(true);
+
+      try {
+        await api.post('/auth/reset-password', { 
+          email, 
+          codigo: code, 
+          nuevaPassword: newPassword 
+        });
+        setStep(4); 
+      } catch (error: any) {
+        setErrorMsg(error.response?.data?.error || 'Error al actualizar la contraseña.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -78,6 +117,14 @@ export default function PasswordRecovery({ onNavigate }: Props) {
           <div className={`step ${step >= 3 ? 'active' : ''}`}></div>
         </div>
 
+        {/* ALERTA DE ERROR GLOBAL */}
+        {errorMsg && (
+          <div className="alert alert-error" style={{ marginBottom: '1rem', background: '#fee2e2', color: '#dc2626', padding: '1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>⚠️</span>
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
         {/* PASO 1: CORREO */}
         {step === 1 && (
           <form onSubmit={handleSendCode}>
@@ -88,12 +135,14 @@ export default function PasswordRecovery({ onNavigate }: Props) {
             <div className="form-group">
               <label className="form-label">Correo Electrónico</label>
               <div className="form-input-wrapper">
-                <input type="email" className="form-input" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" className="form-input" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary"><span>Enviar Código</span></button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
+              <span>{isLoading ? 'Enviando...' : 'Enviar Código'}</span>
+            </button>
             <div className="divider">o</div>
-            <button type="button" className="btn btn-secondary" onClick={() => onNavigate('LOGIN')}>
+            <button type="button" className="btn btn-secondary" onClick={() => onNavigate('LOGIN')} disabled={isLoading}>
               <span>← Volver al Login</span>
             </button>
           </form>
@@ -109,12 +158,16 @@ export default function PasswordRecovery({ onNavigate }: Props) {
             <div className="form-group">
               <label className="form-label">Código (6 dígitos)</label>
               <div className="form-input-wrapper">
-                <input type="text" className="form-input" required maxLength={6} pattern="[0-9]{6}" style={{ textAlign: 'center', letterSpacing: '0.5rem', fontWeight: 700 }} value={code} onChange={(e) => setCode(e.target.value)} />
+                <input type="text" className="form-input" required maxLength={6} pattern="[0-9]{6}" style={{ textAlign: 'center', letterSpacing: '0.5rem', fontWeight: 700 }} value={code} onChange={(e) => setCode(e.target.value)} disabled={isLoading} />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary"><span>Verificar Código</span></button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading || code.length < 6} style={{ opacity: (isLoading || code.length < 6) ? 0.7 : 1 }}>
+              <span>{isLoading ? 'Verificando...' : 'Verificar Código'}</span>
+            </button>
             <div className="divider">o</div>
-            <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}><span>← Corregir correo</span></button>
+            <button type="button" className="btn btn-secondary" onClick={() => { setStep(1); setErrorMsg(''); setCode(''); }} disabled={isLoading}>
+              <span>← Corregir correo</span>
+            </button>
           </form>
         )}
 
@@ -124,7 +177,7 @@ export default function PasswordRecovery({ onNavigate }: Props) {
             <div className="form-group">
               <label className="form-label">Nueva Contraseña</label>
               <div className="form-input-wrapper">
-                <input type={showPassword ? "text" : "password"} className="form-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                <input type={showPassword ? "text" : "password"} className="form-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={isLoading} />
                 <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
@@ -134,7 +187,7 @@ export default function PasswordRecovery({ onNavigate }: Props) {
             <div className="form-group">
               <label className="form-label">Confirmar Contraseña</label>
               <div className="form-input-wrapper">
-                <input type={showPassword ? "text" : "password"} className="form-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                <input type={showPassword ? "text" : "password"} className="form-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={isLoading} />
               </div>
               {!passwordsMatch && confirmPassword !== '' && (
                 <p style={{ color: 'var(--danger-red)', fontSize: '0.8rem', marginTop: '0.5rem' }}>Las contraseñas no coinciden.</p>
@@ -149,8 +202,8 @@ export default function PasswordRecovery({ onNavigate }: Props) {
               <div className={`requirement ${hasSpecial ? 'met' : ''}`}><span className="requirement-icon">{hasSpecial ? '✓' : '○'}</span><span>1 Especial (!@#$%)</span></div>
             </div>
 
-            <button type="submit" className="btn btn-success" disabled={!isValidPassword || !passwordsMatch} style={{ marginTop: '1.5rem' }}>
-              <span>Guardar Contraseña</span>
+            <button type="submit" className="btn btn-success" disabled={!isValidPassword || !passwordsMatch || isLoading} style={{ marginTop: '1.5rem', opacity: (!isValidPassword || !passwordsMatch || isLoading) ? 0.7 : 1 }}>
+              <span>{isLoading ? 'Guardando...' : 'Guardar Contraseña'}</span>
             </button>
           </form>
         )}
