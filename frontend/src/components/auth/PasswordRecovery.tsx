@@ -39,7 +39,7 @@ export default function PasswordRecovery({ onNavigate }: Props) {
 
   if (step === 4) {
     return (
-      <div className="login-card">
+      <div className="login-card" style={{ maxWidth: '450px', width: '100%', margin: '0 auto' }}>
         <div className="card-header">
           <div className="logo">✅</div>
           <h1 className="card-title">¡Actualizada!</h1>
@@ -60,7 +60,7 @@ export default function PasswordRecovery({ onNavigate }: Props) {
   }
 
   return (
-    <div className="login-card">
+    <div className="login-card" style={{ maxWidth: '450px', width: '100%', margin: '0 auto' }}>
       <div className="card-header">
         <div className="logo">🔐</div>
         <h1 className="card-title">Recuperar Contraseña</h1>
@@ -89,7 +89,6 @@ export default function PasswordRecovery({ onNavigate }: Props) {
               <label className="form-label">Correo Electrónico</label>
               <div className="form-input-wrapper">
                 <input type="email" className="form-input" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                <span className="input-icon">📧</span>
               </div>
             </div>
             <button type="submit" className="btn btn-primary"><span>Enviar Código</span></button>
@@ -111,7 +110,6 @@ export default function PasswordRecovery({ onNavigate }: Props) {
               <label className="form-label">Código (6 dígitos)</label>
               <div className="form-input-wrapper">
                 <input type="text" className="form-input" required maxLength={6} pattern="[0-9]{6}" style={{ textAlign: 'center', letterSpacing: '0.5rem', fontWeight: 700 }} value={code} onChange={(e) => setCode(e.target.value)} />
-                <span className="input-icon">🔢</span>
               </div>
             </div>
             <button type="submit" className="btn btn-primary"><span>Verificar Código</span></button>
@@ -127,7 +125,6 @@ export default function PasswordRecovery({ onNavigate }: Props) {
               <label className="form-label">Nueva Contraseña</label>
               <div className="form-input-wrapper">
                 <input type={showPassword ? "text" : "password"} className="form-input" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                <span className="input-icon">🔒</span>
                 <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
@@ -138,7 +135,6 @@ export default function PasswordRecovery({ onNavigate }: Props) {
               <label className="form-label">Confirmar Contraseña</label>
               <div className="form-input-wrapper">
                 <input type={showPassword ? "text" : "password"} className="form-input" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                <span className="input-icon">🔒</span>
               </div>
               {!passwordsMatch && confirmPassword !== '' && (
                 <p style={{ color: 'var(--danger-red)', fontSize: '0.8rem', marginTop: '0.5rem' }}>Las contraseñas no coinciden.</p>
