@@ -102,7 +102,7 @@ export default function ProspeccionForm() {
 
   const cargarEstatus = async () => {
     try {
-      const res = await api.get("/estatus-prospeccion");
+      const res = await api.get("/prospeccion/estatus-prospeccion");
       setEstatusList(res.data.data || []);
 
       if (res.data.length > 0 && !id) {

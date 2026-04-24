@@ -61,7 +61,7 @@ export default function SeguimientoProspeccion() {
     try {
       const [resLotes, resEstatus] = await Promise.all([
         api.get('/prospeccion'),
-        api.get('/estatus-prospeccion')
+        api.get('/prospeccion/estatus-prospeccion')
       ]);
       setLotes(resLotes.data.data || []);
       const estatusData = Array.isArray(resEstatus.data) 

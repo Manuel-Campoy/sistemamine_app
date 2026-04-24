@@ -46,7 +46,7 @@ export default function MovimientoListForm() {
       try {
         const [resLotes, resEstatus] = await Promise.all([
           api.get('/prospeccion'),
-          api.get('/estatus-prospeccion')
+          api.get('/prospeccion/estatus-prospeccion')
         ]);
 
         const estatusData = Array.isArray(resEstatus.data) 
