@@ -23,6 +23,8 @@ module.exports = (prisma) => {
                         fechayhorainicio: true,
                         cantidadextraida: true,
                         turno: true,
+                        numeroextraccion: true,
+                        destino: true,
                         lote: { select: { nombrealias: true } },
                         vehiculo: { select: { numeroeconomico: true, marca: true, modelo: true } },
                         responsable: { select: { nombre: true, apellidopaterno: true } }
