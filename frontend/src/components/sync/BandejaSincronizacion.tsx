@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { localDb } from '../../db/localDb';
 import api from '../../api/axiosConfig';
 import useNetworkStatus from '../../hooks/useNetworkStatus';
-import { useNotification } from '../../hooks/useNotification'; 
+import { useNotification } from '../../hooks/useNotification';
+import { 
+  limpiarCola, 
+  incrementarSincExitosas,
+  incrementarFallos
+} from '../../utils/syncQueue'; 
 
 export default function BandejaSincronizacion() {
   const isOnline = useNetworkStatus();
@@ -24,7 +29,69 @@ export default function BandejaSincronizacion() {
 
   useEffect(() => {
     cargarPendientes();
+    
+    // ✅ PUNTO 5: Intentar sincronizar automáticamente cuando vuelve online
+    if (isOnline && pendientes.length > 0) {
+      const timeoutReintento = setTimeout(() => {
+        sincronizacionAutomatica();
+      }, 1000); // Esperar 1s después de que vuelva online
+      
+      return () => clearTimeout(timeoutReintento);
+    }
   }, [isOnline]);
+
+  // ✅ PUNTO 5: Sincronización automática
+  const sincronizacionAutomatica = async () => {
+    if (!isOnline || pendientes.length === 0 || isSyncing) return;
+
+    setIsSyncing(true);
+    setProgreso({ actual: 0, total: pendientes.length });
+    let exitos = 0;
+
+    for (let i = 0; i < pendientes.length; i++) {
+      const mov = pendientes[i];
+      try {
+        const payload = { ...mov };
+        delete payload.sincronizado;
+        delete payload.intentoSync;
+        delete payload.idmovimiento;
+        delete payload.timestamp_creacion;
+        delete payload.timestamp_sincronizado;
+        delete payload.conflicto_detectado;
+
+        await api.post('/movimientos', payload);
+
+        // ✅ PUNTO 2: Actualizar timestamp de sincronización (Last-Write-Wins)
+        await localDb.movimientos.update(mov.idmovimiento, { 
+          sincronizado: true,
+          timestamp_sincronizado: Date.now()
+        });
+        
+        incrementarSincExitosas();
+        exitos++;
+      } catch (err) {
+        console.error(`Fallo al sincronizar el viaje ${mov.idmovimiento}:`, err);
+        await localDb.movimientos.update(mov.idmovimiento, { 
+          intentoSync: (mov.intentoSync || 0) + 1 
+        });
+        incrementarFallos();
+      } finally {
+        setProgreso(prev => ({ ...prev, actual: prev.actual + 1 }));
+      }
+    }
+
+    setIsSyncing(false);
+    
+    // ✅ PUNTO 5: Limpiar localStorage después de sincronización exitosa
+    if (exitos === pendientes.length) {
+      limpiarCola();
+      success(`¡${exitos} viajes respaldados en el servidor!`, { icon: '☁️' });
+    } else {
+      error(`Se sincronizaron ${exitos} de ${pendientes.length} viajes. La red podría estar inestable.`);
+    }
+    
+    cargarPendientes();
+  };
 
   const iniciarSincronizacion = async () => {
     if (!isOnline) {
@@ -43,15 +110,27 @@ export default function BandejaSincronizacion() {
         const payload = { ...mov };
         delete payload.sincronizado;
         delete payload.intentoSync;
-        delete payload.idmovimiento; 
+        delete payload.idmovimiento;
+        delete payload.timestamp_creacion;
+        delete payload.timestamp_sincronizado;
+        delete payload.conflicto_detectado;
 
         await api.post('/movimientos', payload);
 
-        await localDb.movimientos.update(mov.idmovimiento, { sincronizado: true });
+        // ✅ PUNTO 2: Actualizar timestamp de sincronización
+        await localDb.movimientos.update(mov.idmovimiento, { 
+          sincronizado: true,
+          timestamp_sincronizado: Date.now()
+        });
+        
+        incrementarSincExitosas();
         exitos++;
       } catch (err) {
         console.error(`Fallo al sincronizar el viaje ${mov.idmovimiento}:`, err);
-        await localDb.movimientos.update(mov.idmovimiento, { intentoSync: (mov.intentoSync || 0) + 1 });
+        await localDb.movimientos.update(mov.idmovimiento, { 
+          intentoSync: (mov.intentoSync || 0) + 1 
+        });
+        incrementarFallos();
       } finally {
         setProgreso(prev => ({ ...prev, actual: prev.actual + 1 }));
       }
@@ -61,6 +140,7 @@ export default function BandejaSincronizacion() {
     cargarPendientes(); 
 
     if (exitos === pendientes.length) {
+      limpiarCola();
       success(`¡${exitos} viajes respaldados en el servidor!`, { icon: '☁️' }); 
     } else {
       error(`Se sincronizaron ${exitos} de ${pendientes.length} viajes. La red podría estar inestable.`);

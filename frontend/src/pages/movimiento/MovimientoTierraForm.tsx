@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axiosConfig';
 import { localDb } from '../../db/localDb'; 
 import type { MovimientoOffline, VehiculoOffline, LoteOffline } from '../../db/localDb'; 
-import { useNotification } from '../../hooks/useNotification'; 
+import { useNotification } from '../../hooks/useNotification';
+import { agregarAlaCola, limpiarCola } from '../../utils/syncQueue'; 
 
 export default function MovimientoTierraForm() {
   const { idarealote } = useParams();
@@ -116,24 +117,34 @@ export default function MovimientoTierraForm() {
 
   const sincronizarPendientes = async () => {
     try {
-      const viajesPendientes = await localDb.movimientos.where('sincronizado').equals('false').toArray();
+      const viajesPendientes = await localDb.movimientos.filter(m => m.sincronizado === false).toArray();
       if (viajesPendientes.length === 0) return;
 
       let subidosConExito = 0;
       for (const viaje of viajesPendientes) {
         try {
-          const { idmovimiento, sincronizado, intentoSync, ...payloadDuro } = viaje;
+          const { idmovimiento, sincronizado, intentoSync, timestamp_creacion, timestamp_sincronizado, conflicto_detectado, ...payloadDuro } = viaje;
           await api.post('/movimientos', payloadDuro);
-          await localDb.movimientos.delete(viaje.idmovimiento);
+          
+          // ✅ PUNTO 2: Actualizar con timestamp de sincronización (Last-Write-Wins)
+          await localDb.movimientos.update(viaje.idmovimiento, { 
+            sincronizado: true,
+            timestamp_sincronizado: Date.now()
+          });
           subidosConExito++;
         } catch (err) {
-          await localDb.movimientos.update(viaje.idmovimiento, { intentoSync: viaje.intentoSync + 1 });
+          await localDb.movimientos.update(viaje.idmovimiento, { 
+            intentoSync: (viaje.intentoSync || 0) + 1 
+          });
         }
       }
 
       contarPendientes();
-      if (subidosConExito > 0) {
-        success(`Se sincronizaron ${subidosConExito} viajes exitosamente.`, { icon: '☁️' }); 
+      
+      // ✅ PUNTO 5: Limpiar localStorage si sincronización exitosa usando utility
+      if (subidosConExito === viajesPendientes.length) {
+        limpiarCola();
+        success(`Se sincronizaron ${subidosConExito} viajes exitosamente.`, { icon: '☁️' });
       }
     } catch (err) {
       console.error("Fallo crítico en sincronización", err);
@@ -148,9 +159,10 @@ export default function MovimientoTierraForm() {
 
     setIsLoading(true);
     const cantidadNumerica = parseFloat(cantidadextraida);
+    const ahora = Date.now();
 
     const nuevoViaje: MovimientoOffline = {
-      idmovimiento: `TEMP-${Date.now()}`,
+      idmovimiento: `TEMP-${ahora}`,
       idarealote: idarealote || '',
       idresponsable: user?.id || '',
       idvehiculo: idvehiculo,
@@ -162,7 +174,11 @@ export default function MovimientoTierraForm() {
       cantidadextraida: cantidadNumerica,
       destino: destino,
       sincronizado: false, 
-      intentoSync: 0
+      intentoSync: 0,
+      // ✅ PUNTO 2: Agregar timestamps para detectar conflictos
+      timestamp_creacion: ahora,
+      timestamp_sincronizado: undefined,
+      conflicto_detectado: false
     };
 
     loading("Guardando viaje...", "guardar-viaje");
@@ -170,6 +186,14 @@ export default function MovimientoTierraForm() {
     if (!isOnline) {
       try {
         await localDb.movimientos.add(nuevoViaje);
+        
+        // ✅ PUNTO 5: Persistir cola en localStorage usando utility
+        agregarAlaCola({
+          idmovimiento: nuevoViaje.idmovimiento,
+          timestamp: ahora,
+          accion: 'crear'
+        });
+        
         dismiss("guardar-viaje"); 
         success("Viaje guardado en la Tablet (Offline)", { icon: '💾' });
         
@@ -185,8 +209,14 @@ export default function MovimientoTierraForm() {
       }
     } else {
       try {
-        const { idmovimiento, sincronizado, intentoSync, ...payloadDuro } = nuevoViaje;
+        const { idmovimiento, sincronizado, intentoSync, timestamp_creacion, timestamp_sincronizado, conflicto_detectado, ...payloadDuro } = nuevoViaje;
         await api.post('/movimientos', payloadDuro);
+        
+        // ✅ PUNTO 2: Marcar como sincronizado con timestamp
+        await localDb.movimientos.update(nuevoViaje.idmovimiento, { 
+          sincronizado: true,
+          timestamp_sincronizado: Date.now()
+        });
         
         dismiss("guardar-viaje"); 
         success("Viaje registrado en el servidor", { icon: '✅' });
@@ -196,6 +226,15 @@ export default function MovimientoTierraForm() {
         setTonelajeAcumulado(prev => prev + cantidadNumerica); 
       } catch (err) {
         await localDb.movimientos.add(nuevoViaje);
+        
+        // ✅ PUNTO 5: Persistir en cola usando utility
+        agregarAlaCola({
+          idmovimiento: nuevoViaje.idmovimiento,
+          timestamp: ahora,
+          accion: 'crear',
+          razon_fallo: 'red_inestable'
+        });
+        
         dismiss("guardar-viaje");
         success("Red inestable. Se guardó de forma local.", { icon: '⚠️' });
         

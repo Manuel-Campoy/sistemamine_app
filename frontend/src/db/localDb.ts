@@ -15,6 +15,9 @@ export interface MovimientoOffline {
     destino: string;
     sincronizado: boolean; 
     intentoSync: number;
+    timestamp_creacion: number;  // Timestamp de creación local
+    timestamp_sincronizado?: number;  // Timestamp de última sincronización
+    conflicto_detectado?: boolean;  // Flag para conflictos
 }
 
 export interface ProduccionOffline {
@@ -28,6 +31,9 @@ export interface ProduccionOffline {
     observaciones: string;
     sincronizado: boolean;
     intentoSync: number;
+    timestamp_creacion: number;  // Timestamp de creación local
+    timestamp_sincronizado?: number;  // Timestamp de última sincronización
+    conflicto_detectado?: boolean;  // Flag para conflictos
 }
 
 // --- INTERFACES DE CATÁLOGOS (Solo Lectura) ---
@@ -59,9 +65,9 @@ export class SistemaMineDB extends Dexie {
     constructor() {
         super('SistemaMineDB');
 
-        this.version(6).stores({
-            movimientos: 'idmovimiento, idarealote, sincronizado',
-            produccion: 'idproduccion, idarealote, sincronizado',
+        this.version(7).stores({
+            movimientos: 'idmovimiento, idarealote, sincronizado, timestamp_creacion',
+            produccion: 'idproduccion, idarealote, sincronizado, timestamp_creacion',
             vehiculos: 'idvehiculo',
             lotes: 'idarealote',
             usuarios: 'idusuario',
