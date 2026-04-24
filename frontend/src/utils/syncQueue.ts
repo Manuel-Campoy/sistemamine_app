@@ -1,12 +1,3 @@
-/**
- * ✅ PUNTO 5: Utilidades para gestionar la cola de sincronización persistente
- * Proporciona funciones para:
- * - Guardar/cargar cola de sincronización desde localStorage
- * - Recuperar estado de sincronización al iniciar la app
- * - Limpiar cola después de sincronización exitosa
- * - Registrar intentos fallidos
- */
-
 export interface SyncQueueItem {
   idmovimiento: string;
   timestamp: number;
@@ -25,9 +16,6 @@ export interface SyncState {
   estado: 'pendiente' | 'sincronizando' | 'completado' | 'error';
 }
 
-/**
- * Obtiene la cola actual de localStorage
- */
 export function obtenerCola(): SyncQueueItem[] {
   try {
     const cola = localStorage.getItem(STORAGE_KEY);
@@ -38,9 +26,6 @@ export function obtenerCola(): SyncQueueItem[] {
   }
 }
 
-/**
- * Guarda la cola en localStorage
- */
 export function guardarCola(cola: SyncQueueItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cola));
@@ -49,34 +34,22 @@ export function guardarCola(cola: SyncQueueItem[]): void {
   }
 }
 
-/**
- * Agregar un item a la cola
- */
 export function agregarAlaCola(item: SyncQueueItem): void {
   const cola = obtenerCola();
   cola.push(item);
   guardarCola(cola);
 }
 
-/**
- * Remover un item de la cola por ID
- */
 export function removerDeLaCola(idmovimiento: string): void {
   const cola = obtenerCola();
   const nuevaCola = cola.filter(item => item.idmovimiento !== idmovimiento);
   guardarCola(nuevaCola);
 }
 
-/**
- * Limpiar toda la cola
- */
 export function limpiarCola(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-/**
- * Obtener estado de sincronización
- */
 export function obtenerEstadoSync(): SyncState {
   try {
     const estado = localStorage.getItem(SYNC_STATE_KEY);
@@ -97,9 +70,6 @@ export function obtenerEstadoSync(): SyncState {
   }
 }
 
-/**
- * Actualizar estado de sincronización
- */
 export function actualizarEstadoSync(estado: Partial<SyncState>): void {
   try {
     const estadoActual = obtenerEstadoSync();
@@ -110,9 +80,6 @@ export function actualizarEstadoSync(estado: Partial<SyncState>): void {
   }
 }
 
-/**
- * Incrementar contador de sincronizaciones exitosas
- */
 export function incrementarSincExitosas(): void {
   const estado = obtenerEstadoSync();
   estado.totalItemsSync++;
@@ -120,18 +87,12 @@ export function incrementarSincExitosas(): void {
   actualizarEstadoSync(estado);
 }
 
-/**
- * Incrementar contador de fallos
- */
 export function incrementarFallos(): void {
   const estado = obtenerEstadoSync();
   estado.totalItemsFallo++;
   actualizarEstadoSync(estado);
 }
 
-/**
- * Resetear contadores
- */
 export function resetearContadores(): void {
   actualizarEstadoSync({
     totalItemsSync: 0,
@@ -140,28 +101,17 @@ export function resetearContadores(): void {
   });
 }
 
-/**
- * ✅ PUNTO 2: Detectar conflictos basado en timestamps
- * Compara el timestamp local con uno del servidor para determinar conflictos
- */
 export function detectarConflicto(
   timestampLocal: number,
   timestampServidor: number | null
 ): boolean {
-  // Si no hay timestamp del servidor, no hay conflicto
   if (!timestampServidor) return false;
 
-  // Si el timestamp local es posterior, es un cambio local válido
   if (timestampLocal > timestampServidor) return false;
 
-  // Si son iguales o el servidor es más reciente, hay potencial conflicto
   return true;
 }
 
-/**
- * ✅ PUNTO 2: Resolver conflicto usando Last-Write-Wins
- * El documento más reciente (por timestamp) gana
- */
 export function resolverConflictoLWW(
   timestampLocal: number,
   timestampServidor: number
@@ -169,9 +119,6 @@ export function resolverConflictoLWW(
   return timestampLocal > timestampServidor ? 'local' : 'servidor';
 }
 
-/**
- * Obtener resumen de la cola
- */
 export function obtenerResumenCola(): {
   total: number;
   porProcesar: number;

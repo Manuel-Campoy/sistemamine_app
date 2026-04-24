@@ -15,9 +15,9 @@ export interface MovimientoOffline {
     destino: string;
     sincronizado: boolean; 
     intentoSync: number;
-    timestamp_creacion: number;  // Timestamp de creación local
-    timestamp_sincronizado?: number;  // Timestamp de última sincronización
-    conflicto_detectado?: boolean;  // Flag para conflictos
+    timestamp_creacion: number;  
+    timestamp_sincronizado?: number; 
+    conflicto_detectado?: boolean;  
 }
 
 export interface ProduccionOffline {
@@ -31,9 +31,9 @@ export interface ProduccionOffline {
     observaciones: string;
     sincronizado: boolean;
     intentoSync: number;
-    timestamp_creacion: number;  // Timestamp de creación local
-    timestamp_sincronizado?: number;  // Timestamp de última sincronización
-    conflicto_detectado?: boolean;  // Flag para conflictos
+    timestamp_creacion: number;  
+    timestamp_sincronizado?: number;  
+    conflicto_detectado?: boolean;  
 }
 
 // --- INTERFACES DE CATÁLOGOS (Solo Lectura) ---

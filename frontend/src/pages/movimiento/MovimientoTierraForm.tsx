@@ -126,7 +126,6 @@ export default function MovimientoTierraForm() {
           const { idmovimiento, sincronizado, intentoSync, timestamp_creacion, timestamp_sincronizado, conflicto_detectado, ...payloadDuro } = viaje;
           await api.post('/movimientos', payloadDuro);
           
-          // ✅ PUNTO 2: Actualizar con timestamp de sincronización (Last-Write-Wins)
           await localDb.movimientos.update(viaje.idmovimiento, { 
             sincronizado: true,
             timestamp_sincronizado: Date.now()
@@ -141,7 +140,6 @@ export default function MovimientoTierraForm() {
 
       contarPendientes();
       
-      // ✅ PUNTO 5: Limpiar localStorage si sincronización exitosa usando utility
       if (subidosConExito === viajesPendientes.length) {
         limpiarCola();
         success(`Se sincronizaron ${subidosConExito} viajes exitosamente.`, { icon: '☁️' });
@@ -175,7 +173,6 @@ export default function MovimientoTierraForm() {
       destino: destino,
       sincronizado: false, 
       intentoSync: 0,
-      // ✅ PUNTO 2: Agregar timestamps para detectar conflictos
       timestamp_creacion: ahora,
       timestamp_sincronizado: undefined,
       conflicto_detectado: false
@@ -187,7 +184,6 @@ export default function MovimientoTierraForm() {
       try {
         await localDb.movimientos.add(nuevoViaje);
         
-        // ✅ PUNTO 5: Persistir cola en localStorage usando utility
         agregarAlaCola({
           idmovimiento: nuevoViaje.idmovimiento,
           timestamp: ahora,
@@ -212,7 +208,6 @@ export default function MovimientoTierraForm() {
         const { idmovimiento, sincronizado, intentoSync, timestamp_creacion, timestamp_sincronizado, conflicto_detectado, ...payloadDuro } = nuevoViaje;
         await api.post('/movimientos', payloadDuro);
         
-        // ✅ PUNTO 2: Marcar como sincronizado con timestamp
         await localDb.movimientos.update(nuevoViaje.idmovimiento, { 
           sincronizado: true,
           timestamp_sincronizado: Date.now()
@@ -227,7 +222,6 @@ export default function MovimientoTierraForm() {
       } catch (err) {
         await localDb.movimientos.add(nuevoViaje);
         
-        // ✅ PUNTO 5: Persistir en cola usando utility
         agregarAlaCola({
           idmovimiento: nuevoViaje.idmovimiento,
           timestamp: ahora,

@@ -30,17 +30,15 @@ export default function BandejaSincronizacion() {
   useEffect(() => {
     cargarPendientes();
     
-    // ✅ PUNTO 5: Intentar sincronizar automáticamente cuando vuelve online
     if (isOnline && pendientes.length > 0) {
       const timeoutReintento = setTimeout(() => {
         sincronizacionAutomatica();
-      }, 1000); // Esperar 1s después de que vuelva online
+      }, 1000); 
       
       return () => clearTimeout(timeoutReintento);
     }
   }, [isOnline]);
 
-  // ✅ PUNTO 5: Sincronización automática
   const sincronizacionAutomatica = async () => {
     if (!isOnline || pendientes.length === 0 || isSyncing) return;
 
@@ -61,7 +59,6 @@ export default function BandejaSincronizacion() {
 
         await api.post('/movimientos', payload);
 
-        // ✅ PUNTO 2: Actualizar timestamp de sincronización (Last-Write-Wins)
         await localDb.movimientos.update(mov.idmovimiento, { 
           sincronizado: true,
           timestamp_sincronizado: Date.now()
@@ -82,7 +79,6 @@ export default function BandejaSincronizacion() {
 
     setIsSyncing(false);
     
-    // ✅ PUNTO 5: Limpiar localStorage después de sincronización exitosa
     if (exitos === pendientes.length) {
       limpiarCola();
       success(`¡${exitos} viajes respaldados en el servidor!`, { icon: '☁️' });
@@ -117,7 +113,6 @@ export default function BandejaSincronizacion() {
 
         await api.post('/movimientos', payload);
 
-        // ✅ PUNTO 2: Actualizar timestamp de sincronización
         await localDb.movimientos.update(mov.idmovimiento, { 
           sincronizado: true,
           timestamp_sincronizado: Date.now()
