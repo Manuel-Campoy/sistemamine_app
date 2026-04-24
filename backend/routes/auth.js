@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { verificarToken } = require('../middlewares/auth.middleware');
-const { enviarCorreo } = require('../mailer'); 
+const { enviarCorreo } = require('../utils/mailer.js'); 
 
 const router = express.Router();
 
